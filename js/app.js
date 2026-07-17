@@ -170,8 +170,26 @@ function renderNav(route) {
   ).join("");
 }
 
+// 初回起動:デモ車両を用意して「マイカー」から始める
+function boot() {
+  if (!S.activated) {
+    S.activated = true;
+    S.loggedIn = true;
+    S.owner = { ...DEMO_SEED.owner };
+    S.car = { ...DEMO_SEED.car };
+    S.diary = DEMO_SEED.diary.map(d => ({ ...d }));
+    S.records = DEMO_SEED.records.map(r => ({ ...r }));
+    save();
+  }
+  if (!location.hash || location.hash === "#home") {
+    location.hash = "#mycar"; // hashchange が render を呼ぶ
+    return;
+  }
+  render();
+}
+
 window.addEventListener("hashchange", render);
-window.addEventListener("DOMContentLoaded", render);
+window.addEventListener("DOMContentLoaded", boot);
 
 // ============================================================
 // 各画面
@@ -487,9 +505,9 @@ function viewMyCar() {
     <div class="cc-model">${esc(car.model)}</div>
     <div class="cc-sub">${esc(car.year)}年式${car.color ? " / " + esc(car.color) : ""} / 登録店: ${esc(car.shopName)}</div>
     <div class="car-stats">
-      <div class="cs"><div class="n">${odo.toLocaleString()}<small style="font-size:11px">km</small></div><div class="l">走行距離</div></div>
+      <div class="cs"><div class="n"><span data-count="${odo}">0</span><small style="font-size:11px">km</small></div><div class="l">走行距離</div></div>
       <div class="cs"><div class="n">${ownLabel}</div><div class="l">記録期間</div></div>
-      <div class="cs"><div class="n">${S.diary.length + S.records.length}<small style="font-size:11px">件</small></div><div class="l">ヒストリー</div></div>
+      <div class="cs"><div class="n"><span data-count="${S.diary.length + S.records.length}">0</span><small style="font-size:11px">件</small></div><div class="l">ヒストリー</div></div>
     </div>
   </div>
 
@@ -807,8 +825,9 @@ function viewAnalysis() {
   }
 
   const a = S.analysis;
-  const circumference = 2 * Math.PI * 48;
-  const dash = circumference * a.score / 100;
+  const R = 48;
+  const circumference = 2 * Math.PI * R;
+  const offset = circumference * (1 - a.score / 100);
   const scoreColor = a.score >= 85 ? "var(--green)" : a.score >= 65 ? "var(--gold)" : "var(--accent)";
 
   return `
@@ -820,12 +839,13 @@ function viewAnalysis() {
   <div class="card">
     <div class="score-ring-wrap">
       <div class="score-ring">
-        <svg width="110" height="110" viewBox="0 0 110 110">
-          <circle cx="55" cy="55" r="48" fill="none" stroke="var(--line)" stroke-width="10"/>
-          <circle cx="55" cy="55" r="48" fill="none" stroke="${scoreColor}" stroke-width="10"
-            stroke-linecap="round" stroke-dasharray="${dash} ${circumference}"/>
+        <svg width="118" height="118" viewBox="0 0 110 110">
+          <circle cx="55" cy="55" r="${R}" fill="none" stroke="var(--line)" stroke-width="10"/>
+          <circle class="ring-fill" cx="55" cy="55" r="${R}" fill="none" stroke="${scoreColor}" stroke-width="10"
+            stroke-linecap="round" stroke-dasharray="${circumference}"
+            stroke-dashoffset="${offset}" style="--circ:${circumference}"/>
         </svg>
-        <div class="score-num"><b>${a.score}</b><span>ヒストリースコア</span></div>
+        <div class="score-num"><b data-count="${a.score}">0</b><span>ヒストリースコア</span></div>
       </div>
       <div>
         <p style="font-size:13px;font-weight:800;margin-bottom:2px">推定される使われ方</p>
@@ -897,7 +917,10 @@ function runAnalysis() {
       analyzing = false;
       save();
       // 分析中に別画面へ移動していた場合は、入力中のフォームを壊さないよう再描画しない
-      if (currentRoute() === "analysis") render();
+      if (currentRoute() === "analysis") {
+        render();
+        if (typeof Anim !== "undefined") Anim.confetti();
+      }
       toast("分析が完了しました");
     }
   }, 700);
@@ -955,6 +978,12 @@ function viewReport() {
 
 // ---------- 描画後フック ----------
 function afterRender(route) {
+  // 非表示タブで開かれたときは登場アニメを省略して即表示(空白防止)
+  document.getElementById("app").classList.toggle("instant", document.hidden);
+
+  // カウントアップ等のアニメーション
+  if (typeof Anim !== "undefined") Anim.run();
+
   // Enterキーでのフォーム送信サポート
   const map = {
     setup: () => setupStep === 1 && setupNext1(),
