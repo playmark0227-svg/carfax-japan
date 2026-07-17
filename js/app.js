@@ -154,19 +154,19 @@ function render() {
 
 function renderNav(route) {
   const items = [
-    { href: "#home",     icon: "home",   label: "ホーム" },
-    { href: "#mycar",    icon: "car",    label: "マイカー" },
-    { href: "#diary",    icon: "book",   label: "日記" },
-    { href: "#records",  icon: "wrench", label: "整備" },
-    { href: "#analysis", icon: "chart",  label: "AI分析" },
+    { href: "#home",     icon: "home",   label: "ホーム",   color: "var(--blue)" },
+    { href: "#mycar",    icon: "car",    label: "マイカー", color: "var(--pink)" },
+    { href: "#diary",    icon: "book",   label: "日記",     color: "var(--coral)" },
+    { href: "#records",  icon: "wrench", label: "整備",     color: "var(--teal)" },
+    { href: "#analysis", icon: "chart",  label: "AI分析",   color: "var(--purple)" },
   ];
   const html = items.map(i =>
-    `<a href="${i.href}" class="${route === i.href.slice(1) ? "active" : ""}">
+    `<a href="${i.href}" style="--nav-c:${i.color}" class="${route === i.href.slice(1) ? "active" : ""}">
       <span class="t-icon">${ICONS[i.icon]}</span><span>${i.label}</span></a>`
   ).join("");
   document.getElementById("tabbar").innerHTML = html;
   document.getElementById("topnav").innerHTML = items.map(i =>
-    `<a href="${i.href}" class="${route === i.href.slice(1) ? "active" : ""}">${i.label}</a>`
+    `<a href="${i.href}" style="--nav-c:${i.color}" class="${route === i.href.slice(1) ? "active" : ""}">${i.label}</a>`
   ).join("");
 }
 
@@ -204,7 +204,7 @@ function viewHome() {
 
   return `
   <section class="hero">
-    <h1>愛車の物語を、<br>次のオーナーへ。</h1>
+    <h1>愛車の<span class="accent">物語</span>を、<br>次のオーナーへ。</h1>
     <p>クルマカルテは、クルマの「使われ方」まで記録する民間の車両ヒストリーサービスです。</p>
     <p>日記と認定工場の整備記録が、売るとき・買うときの信頼になります。</p>
     <div class="hero-cta">${cta}</div>
@@ -212,21 +212,21 @@ function viewHome() {
 
   <p class="section-title">クルマカルテの特徴</p>
   <div class="features">
-    <div class="feature">
+    <div class="feature feat-blue">
       <div class="f-icon">${ICONS.store}</div>
       <div>
         <h3>認定店だけが登録できる</h3>
         <p>初期設定は、車を購入した認定販売店などクルマカルテの認定を受けた店舗でのみ行えます。ETCセットアップのように、なりすましのない確かな車両登録を実現します。</p>
       </div>
     </div>
-    <div class="feature">
+    <div class="feature feat-coral">
       <div class="f-icon">${ICONS.book}</div>
       <div>
         <h3>愛車日記でストーリーを残す</h3>
         <p>半年に1回でOK。どんなふうに乗って、どう手入れしたか。積み重なった日記はそのまま「この車が大切にされてきた証明」になり、売却時の価値になります。</p>
       </div>
     </div>
-    <div class="feature">
+    <div class="feature feat-purple">
       <div class="f-icon">${ICONS.chart}</div>
       <div>
         <h3>AIがヒストリーを分析</h3>
@@ -512,19 +512,19 @@ function viewMyCar() {
   </div>
 
   <div class="action-grid">
-    <a class="action-tile" href="#diary-new">
+    <a class="action-tile tile-coral" href="#diary-new">
       <span class="a-icon">${ICONS.pen}</span><span class="a-title">日記を書く</span>
       <span class="a-desc">半年に1回でOK</span>
     </a>
-    <a class="action-tile" href="#records">
+    <a class="action-tile tile-teal" href="#records">
       <span class="a-icon">${ICONS.wrench}</span><span class="a-title">整備記録</span>
       <span class="a-desc">認定工場が記入</span>
     </a>
-    <a class="action-tile" href="#analysis">
+    <a class="action-tile tile-purple" href="#analysis">
       <span class="a-icon">${ICONS.chart}</span><span class="a-title">AI分析</span>
       <span class="a-desc">使われ方を推定</span>
     </a>
-    <a class="action-tile" href="#report">
+    <a class="action-tile tile-amber" href="#report">
       <span class="a-icon">${ICONS.doc}</span><span class="a-title">売却レポート</span>
       <span class="a-desc">買い手向け資料</span>
     </a>
@@ -828,7 +828,7 @@ function viewAnalysis() {
   const R = 48;
   const circumference = 2 * Math.PI * R;
   const offset = circumference * (1 - a.score / 100);
-  const scoreColor = a.score >= 85 ? "var(--green)" : a.score >= 65 ? "var(--gold)" : "var(--accent)";
+  const scoreColor = a.score >= 85 ? "var(--green)" : a.score >= 65 ? "var(--amber)" : "var(--coral)";
 
   return `
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">

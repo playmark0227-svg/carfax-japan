@@ -57,7 +57,7 @@ const Anim = {
   // 紙吹雪(分析完了などのお祝い演出)
   confetti() {
     if (this.reduce) return;
-    const colors = ["#1f6bff", "#0b4fe0", "#ffcb1f", "#14a05a", "#ff7a59", "#7c5cff"];
+    const colors = ["#f4603a", "#f0a017", "#0ba98c", "#6c5ce7", "#2f6bed", "#ec4c8a"];
     const layer = document.createElement("div");
     layer.className = "confetti-layer";
     const n = 90;
