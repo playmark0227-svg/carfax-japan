@@ -191,14 +191,14 @@ const KurumaAI = {
 
     if (mileage.annualKm != null) {
       out.push({
-        icon: "📏", title: `年間走行は約${mileage.annualKm.toLocaleString()}km`,
+        title: `年間走行は約${mileage.annualKm.toLocaleString()}km`,
         body: `記録期間${mileage.months}ヶ月で${mileage.totalKm.toLocaleString()}km走行。${mileage.annualKm < 8000 ? "日本の平均(約8,000km/年)を下回るゆとりのあるペースです。" : "日本の平均(約8,000km/年)を上回るペースです。"}`,
       });
     }
 
     if (maint.oilIntervalKm != null) {
       out.push({
-        icon: "🛢️", title: `オイル交換は平均${maint.oilIntervalKm.toLocaleString()}kmごと`,
+        title: `オイル交換は平均${maint.oilIntervalKm.toLocaleString()}kmごと`,
         body: maint.regularOil
           ? `約${maint.oilIntervalMonths}ヶ月ごとの交換で、推奨サイクルを十分に満たす模範的な管理です。エンジン内部のコンディション維持が期待できます。`
           : `交換間隔がやや長めです。今後は距離または期間の早い方での交換をおすすめします。`,
@@ -207,7 +207,7 @@ const KurumaAI = {
 
     if (maint.certified > 0) {
       out.push({
-        icon: "🔧", title: `認定工場の整備記録が${maint.certified}件`,
+        title: `認定工場の整備記録が${maint.certified}件`,
         body: `全${maint.total}件の整備記録のうち${maint.certified}件がクルマカルテ認定工場による記入です。第三者による記録は買い手にとって高い信頼材料になります。`,
       });
     }
@@ -215,26 +215,26 @@ const KurumaAI = {
     const goodTags = usage.tags.filter(t => t.good === true);
     if (goodTags.length) {
       out.push({
-        icon: "🌟", title: "プラス評価につながる記述",
+        title: "プラス評価につながる記述",
         body: "日記・整備記録から「" + goodTags.map(t => t.label).join("」「") + "」が読み取れました。",
       });
     }
 
     if (severe.isSevere) {
       out.push({
-        icon: "⚠️", title: "確認しておきたいポイント",
+        title: "確認しておきたいポイント",
         body: severe.hits.join("。") + "。該当箇所の整備記録があると買い手の安心につながります。",
       });
     } else {
       out.push({
-        icon: "✅", title: "シビアコンディション該当なし",
+        title: "シビアコンディション該当なし",
         body: "雪道・サーキット・短距離反復など、車に負荷の大きい使われ方を示す記述は見つかりませんでした。",
       });
     }
 
     if (diary.length >= 2) {
       out.push({
-        icon: "📖", title: `オーナーの日記が${diary.length}件`,
+        title: `オーナーの日記が${diary.length}件`,
         body: "納車から継続して書かれた記録は、機械では測れない「大切にされてきた度合い」を伝えます。売却時のストーリー資料として有効です。",
       });
     }

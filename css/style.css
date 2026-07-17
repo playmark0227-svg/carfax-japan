@@ -46,7 +46,7 @@ body {
   border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--ink); }
-.brand-mark { font-size: 22px; }
+.brand-mark svg { width: 26px; height: 26px; display: block; }
 .brand-name { font-weight: 800; font-size: 17px; letter-spacing: .04em; }
 .brand-tag {
   font-size: 9px; font-weight: 700; letter-spacing: .12em;
@@ -76,7 +76,7 @@ body {
   gap: 2px; text-decoration: none; color: var(--ink-faint);
   font-size: 10px; font-weight: 700;
 }
-.tabbar a .t-icon { font-size: 20px; line-height: 1; }
+.tabbar a .t-icon svg { width: 22px; height: 22px; display: block; }
 .tabbar a.active { color: var(--accent); }
 .tabbar.hidden { display: none; }
 
@@ -102,11 +102,6 @@ body {
   background: linear-gradient(135deg, var(--navy) 0%, #2c5282 60%, #3a6ea5 100%);
   color: #fff; border-radius: var(--radius); padding: 32px 24px;
   margin-bottom: 20px; position: relative; overflow: hidden;
-}
-.hero::after {
-  content: "🚗"; position: absolute; right: -10px; bottom: -20px;
-  font-size: 120px; opacity: .12; transform: rotate(-8deg);
-  pointer-events: none;
 }
 .hero h1 { font-size: 24px; line-height: 1.45; margin-bottom: 10px; }
 .hero p { font-size: 14px; opacity: .92; margin-bottom: 6px; }
@@ -139,10 +134,11 @@ body {
   padding: 18px; display: flex; gap: 14px; align-items: flex-start;
 }
 .feature .f-icon {
-  font-size: 24px; background: var(--navy-soft); border-radius: 12px;
+  background: var(--navy-soft); border-radius: 12px;
   width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
+  flex-shrink: 0; color: var(--navy);
 }
+.feature .f-icon svg { width: 24px; height: 24px; }
 .feature h3 { font-size: 15px; margin-bottom: 4px; }
 .feature p { font-size: 13px; color: var(--ink-soft); }
 
@@ -236,7 +232,8 @@ textarea { min-height: 110px; resize: vertical; }
   padding: 16px 14px; text-decoration: none; color: var(--ink);
   display: flex; flex-direction: column; gap: 6px;
 }
-.action-tile .a-icon { font-size: 22px; }
+.action-tile .a-icon { color: var(--navy); }
+.action-tile .a-icon svg { width: 24px; height: 24px; }
 .action-tile .a-title { font-size: 13px; font-weight: 800; }
 .action-tile .a-desc { font-size: 11px; color: var(--ink-faint); line-height: 1.5; }
 
@@ -309,11 +306,10 @@ textarea { min-height: 110px; resize: vertical; }
 .usage-tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 
 .insight {
-  display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px dashed var(--line);
+  padding: 12px 0; border-bottom: 1px dashed var(--line);
   font-size: 13px;
 }
 .insight:last-child { border-bottom: none; }
-.insight .i-icon { flex-shrink: 0; font-size: 18px; }
 .insight b { display: block; font-size: 13px; }
 .insight p { color: var(--ink-soft); font-size: 12px; }
 
@@ -339,7 +335,6 @@ textarea { min-height: 110px; resize: vertical; }
 .empty {
   text-align: center; padding: 40px 20px; color: var(--ink-faint);
 }
-.empty .e-icon { font-size: 40px; margin-bottom: 10px; }
 .empty p { font-size: 13px; }
 
 /* ---------- トースト ---------- */

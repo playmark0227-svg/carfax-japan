@@ -105,6 +105,19 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
 }
 
+
+// ---------- アイコン(インラインSVG) ----------
+const ICONS = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.8 9.8V20h12.4V9.8"/></svg>',
+  car: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 13.2 6.1 8.4A2 2 0 0 1 8 7h8a2 2 0 0 1 1.9 1.4l1.6 4.8"/><rect x="3.5" y="13.2" width="17" height="5" rx="1.6"/><path d="M6.5 18.2v1.6M17.5 18.2v1.6"/><path d="M7 15.7h.01M17 15.7h.01"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.3C10.6 4.9 8.7 4.4 6.3 4.4c-1.1 0-2.2.2-3.3.5v14.2c1.1-.3 2.2-.5 3.3-.5 2.4 0 4.3.6 5.7 2 1.4-1.4 3.3-2 5.7-2 1.1 0 2.2.2 3.3.5V4.9c-1.1-.3-2.2-.5-3.3-.5-2.4 0-4.3.5-5.7 1.9Z"/><path d="M12 6.3v14.2"/></svg>',
+  wrench: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M7 16.5v-5M12 16.5V6.5M17 16.5V9.5"/></svg>',
+  doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5V8h4"/><path d="M9.8 12.2h4.4M9.8 15.6h4.4"/></svg>',
+  pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2.12 2.12 0 0 1 3 3L8 19l-4 1Z"/><path d="M13.5 7.5l3 3"/></svg>',
+  store: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14l1.5 4.5H3.5L5 5Z"/><path d="M5.5 9.5V19.5h13V9.5"/><path d="M9.7 19.5V14h4.6v5.5"/></svg>',
+};
+
 // ---------- ルーター ----------
 const ROUTES = {
   home:     { fn: viewHome,     guard: null },
@@ -141,15 +154,15 @@ function render() {
 
 function renderNav(route) {
   const items = [
-    { href: "#home",     icon: "🏠", label: "ホーム" },
-    { href: "#mycar",    icon: "🚗", label: "マイカー" },
-    { href: "#diary",    icon: "📖", label: "日記" },
-    { href: "#records",  icon: "🔧", label: "整備" },
-    { href: "#analysis", icon: "🤖", label: "AI分析" },
+    { href: "#home",     icon: "home",   label: "ホーム" },
+    { href: "#mycar",    icon: "car",    label: "マイカー" },
+    { href: "#diary",    icon: "book",   label: "日記" },
+    { href: "#records",  icon: "wrench", label: "整備" },
+    { href: "#analysis", icon: "chart",  label: "AI分析" },
   ];
   const html = items.map(i =>
     `<a href="${i.href}" class="${route === i.href.slice(1) ? "active" : ""}">
-      <span class="t-icon">${i.icon}</span><span>${i.label}</span></a>`
+      <span class="t-icon">${ICONS[i.icon]}</span><span>${i.label}</span></a>`
   ).join("");
   document.getElementById("tabbar").innerHTML = html;
   document.getElementById("topnav").innerHTML = items.map(i =>
@@ -179,24 +192,24 @@ function viewHome() {
     <div class="hero-cta">${cta}</div>
   </section>
 
-  <p class="section-title">クルマカルテの3つの柱</p>
+  <p class="section-title">クルマカルテの特徴</p>
   <div class="features">
     <div class="feature">
-      <div class="f-icon">🏪</div>
+      <div class="f-icon">${ICONS.store}</div>
       <div>
         <h3>認定店だけが登録できる</h3>
         <p>初期設定は、車を購入した認定販売店などクルマカルテの認定を受けた店舗でのみ行えます。ETCセットアップのように、なりすましのない確かな車両登録を実現します。</p>
       </div>
     </div>
     <div class="feature">
-      <div class="f-icon">📖</div>
+      <div class="f-icon">${ICONS.book}</div>
       <div>
         <h3>愛車日記でストーリーを残す</h3>
         <p>半年に1回でOK。どんなふうに乗って、どう手入れしたか。積み重なった日記はそのまま「この車が大切にされてきた証明」になり、売却時の価値になります。</p>
       </div>
     </div>
     <div class="feature">
-      <div class="f-icon">🤖</div>
+      <div class="f-icon">${ICONS.chart}</div>
       <div>
         <h3>AIがヒストリーを分析</h3>
         <p>認定工場の整備記録と日記をAIが読み解き、「週末レジャー中心」「メンテ良好」など、この車がどう使われてきたかを買い手にもわかる形で示します。</p>
@@ -225,7 +238,6 @@ function viewHome() {
   </div>
 
   <div class="banner banner-info">
-    <span>💡</span>
     <div>これはコンセプトデモです。<b>「デモデータで体験する」</b>を押すと、5年分の記録が入ったサンプル車両(マツダ ロードスター)で全機能を試せます。</div>
   </div>`;
 }
@@ -250,7 +262,7 @@ function viewSetup() {
   if (setupStep === 1) {
     body = `
     <h2>認定店コードの入力</h2>
-    <div class="banner banner-accent"><span>🔒</span>
+    <div class="banner banner-accent">
       <div><b>初期設定は認定店のみ。</b>この画面は本来、車を購入した認定販売店の店頭でスタッフが操作します。店舗ごとに発行された認定店コードがないと登録できません。</div>
     </div>
     <div class="field">
@@ -264,7 +276,7 @@ function viewSetup() {
     const shop = CERTIFIED_SHOPS[setupDraft.shopCode];
     body = `
     <h2>車両情報の登録</h2>
-    <div class="shop-badge">✅ 認定店として認証済み: ${esc(shop.name)}(${esc(shop.area)})</div>
+    <div class="shop-badge">認定店として認証済み: ${esc(shop.name)}(${esc(shop.area)})</div>
     <div class="field">
       <label for="f-model">車種名</label>
       <input type="text" id="f-model" placeholder="例: マツダ ロードスター S Special Package" value="${esc(setupDraft.model || "")}">
@@ -309,7 +321,7 @@ function viewSetup() {
       <p style="font-size:13px"><b>走行距離:</b> ${Number(setupDraft.initialOdo).toLocaleString()}km</p>
       <p style="font-size:13px"><b>オーナー:</b> ${esc(setupDraft.ownerName)} 様</p>
     </div>
-    <div class="banner banner-info"><span>📱</span>
+    <div class="banner banner-info">
       <div>登録完了後、この端末はログイン済みになります。<b>自動ログアウトはありません</b>ので、次回からすぐに日記を書けます。</div>
     </div>
     <button class="btn btn-primary btn-block" onclick="setupComplete()">この内容で車両を登録する</button>
@@ -378,7 +390,7 @@ function setupComplete() {
   setupStep = 1;
   setupDraft = {};
   location.hash = "#mycar";
-  toast("車両を登録しました。カーライフの記録をはじめましょう！");
+  toast("車両を登録しました");
 }
 
 // ---------- ログイン ----------
@@ -417,7 +429,7 @@ function viewLogin() {
     </div>
     <p class="err-msg" id="e-login" hidden>電話番号が登録情報と一致しません。</p>
     <button class="btn btn-primary btn-block" onclick="doLogin()">ログイン</button>
-    <div class="banner banner-info" style="margin-top:14px"><span>📱</span>
+    <div class="banner banner-info" style="margin-top:14px">
       <div><b>ログインは一度だけ。</b>この端末では自動ログアウトを行いません。半年後に日記を書くときも、開くだけですぐ使えます。</div>
     </div>
   </div>`;
@@ -436,7 +448,7 @@ function doLogin() {
   S.loggedIn = true;
   save();
   location.hash = "#mycar";
-  toast("おかえりなさい。ログアウトされるまでログイン状態を維持します");
+  toast("ログインしました");
 }
 
 function logout() {
@@ -459,11 +471,11 @@ function viewMyCar() {
   const diaryGap = monthsSince(lastDiary);
   let reminder = "";
   if (!S.diary.length) {
-    reminder = `<div class="banner banner-accent"><span>✍️</span>
-      <div><b>最初の日記を書いてみましょう。</b>納車の気持ちを残しておくと、この車の物語のはじまりになります。</div></div>`;
+    reminder = `<div class="banner banner-accent">
+      <div><b>まだ日記がありません。</b>納車時の様子や普段の使い方を、最初の日記として残しておけます。</div></div>`;
   } else if (diaryGap >= 6) {
-    reminder = `<div class="banner banner-accent"><span>⏰</span>
-      <div><b>前回の日記から${diaryGap}ヶ月経ちました。</b>日記は半年に1回でOK。最近のカーライフをひとこと残しませんか？</div></div>`;
+    reminder = `<div class="banner banner-accent">
+      <div><b>前回の日記から${diaryGap}ヶ月経過しています。</b>日記の更新は半年に1回程度が目安です。</div></div>`;
   }
 
   const timeline = buildTimeline([...S.diary, ...S.records], 5);
@@ -471,7 +483,7 @@ function viewMyCar() {
   return `
   ${reminder}
   <div class="car-card">
-    <span class="verified-chip">🛡️ 認定店登録済み車両</span>
+    <span class="verified-chip">認定店登録済み車両</span>
     <div class="cc-model">${esc(car.model)}</div>
     <div class="cc-sub">${esc(car.year)}年式${car.color ? " / " + esc(car.color) : ""} / 登録店: ${esc(car.shopName)}</div>
     <div class="car-stats">
@@ -483,25 +495,25 @@ function viewMyCar() {
 
   <div class="action-grid">
     <a class="action-tile" href="#diary-new">
-      <span class="a-icon">✍️</span><span class="a-title">日記を書く</span>
+      <span class="a-icon">${ICONS.pen}</span><span class="a-title">日記を書く</span>
       <span class="a-desc">半年に1回でOK</span>
     </a>
     <a class="action-tile" href="#records">
-      <span class="a-icon">🔧</span><span class="a-title">整備記録</span>
+      <span class="a-icon">${ICONS.wrench}</span><span class="a-title">整備記録</span>
       <span class="a-desc">認定工場が記入</span>
     </a>
     <a class="action-tile" href="#analysis">
-      <span class="a-icon">🤖</span><span class="a-title">AI分析</span>
+      <span class="a-icon">${ICONS.chart}</span><span class="a-title">AI分析</span>
       <span class="a-desc">使われ方を推定</span>
     </a>
     <a class="action-tile" href="#report">
-      <span class="a-icon">📄</span><span class="a-title">売却レポート</span>
+      <span class="a-icon">${ICONS.doc}</span><span class="a-title">売却レポート</span>
       <span class="a-desc">買い手向け資料</span>
     </a>
   </div>
 
   <p class="section-title">最近のヒストリー</p>
-  ${timeline || `<div class="empty"><div class="e-icon">📭</div><p>まだ記録がありません。最初の日記を書いてみましょう。</p></div>`}
+  ${timeline || `<div class="empty"><p>まだ記録がありません。</p></div>`}
   ${(S.diary.length + S.records.length) > 5 ? `<div style="text-align:center"><a class="btn btn-secondary" href="#diary">すべてのヒストリーを見る</a></div>` : ""}
   `;
 }
@@ -517,16 +529,16 @@ function buildTimeline(items, limit) {
   return `<div class="timeline">` + shown.map(x => {
     const isDiary = !("factoryCode" in x);
     const chips = isDiary
-      ? `<span class="chip chip-diary">📖 日記</span>${x.category ? `<span class="chip chip-tag">${esc(x.category)}</span>` : ""}`
-      : `<span class="chip chip-record">🔧 整備記録</span>` +
-        (x.certified ? `<span class="chip chip-verified">✅ 認定工場</span>` : "") +
-        (x.pasted ? `<span class="chip chip-paste">📋 記録簿転記</span>` : "");
+      ? `<span class="chip chip-diary">日記</span>${x.category ? `<span class="chip chip-tag">${esc(x.category)}</span>` : ""}`
+      : `<span class="chip chip-record">整備記録</span>` +
+        (x.certified ? `<span class="chip chip-verified">認定工場</span>` : "") +
+        (x.pasted ? `<span class="chip chip-paste">記録簿転記</span>` : "");
     const body = isDiary ? x.text : x.detail;
     const items_ = !isDiary && (x.items || []).length
       ? `<ul class="tl-items">${x.items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>` : "";
     const meta = [
-      Number(x.odo) > 0 ? `🛣️ ${Number(x.odo).toLocaleString()}km` : "",
-      !isDiary && x.factoryName ? `🏭 ${esc(x.factoryName)}` : "",
+      Number(x.odo) > 0 ? `走行距離 ${Number(x.odo).toLocaleString()}km` : "",
+      !isDiary && x.factoryName ? `記入: ${esc(x.factoryName)}` : "",
     ].filter(Boolean).join(`</span><span>`);
 
     return `<div class="tl-item ${isDiary ? "tl-diary" : "tl-record"}">
@@ -546,19 +558,19 @@ function viewDiary() {
   const lastDiary = S.diary.length ? S.diary.map(d => d.date).sort().slice(-1)[0] : null;
   const gap = monthsSince(lastDiary);
   const reminder = S.diary.length && gap >= 6
-    ? `<div class="banner banner-accent"><span>⏰</span><div><b>前回から${gap}ヶ月。</b>そろそろ日記を書きませんか？</div></div>`
+    ? `<div class="banner banner-accent"><div><b>前回の日記から${gap}ヶ月経過しています。</b>更新の目安は半年に1回です。</div></div>`
     : "";
 
   return `
   ${reminder}
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
     <h2 style="font-size:18px">愛車日記</h2>
-    <a class="btn btn-primary" href="#diary-new">✍️ 日記を書く</a>
+    <a class="btn btn-primary" href="#diary-new">日記を書く</a>
   </div>
   <p style="font-size:12px;color:var(--ink-faint);margin-bottom:16px">
-    更新は半年に1回でOK。気負わず、そのときのカーライフをそのまま残しましょう。
+    更新の目安は半年に1回です。使い方や手入れの記録が、そのまま車両ヒストリーになります。
   </p>
-  ${buildTimeline(S.diary) || `<div class="empty"><div class="e-icon">📖</div><p>まだ日記がありません。<br>最初の1件を書いてみましょう。</p></div>`}`;
+  ${buildTimeline(S.diary) || `<div class="empty"><p>まだ日記がありません。</p></div>`}`;
 }
 
 // ---------- 日記作成 ----------
@@ -591,7 +603,7 @@ function viewDiaryNew() {
     <div class="field">
       <label for="d-text">本文</label>
       <textarea id="d-text" placeholder="例: オープンにして箱根へ。帰りに手洗い洗車。普段は週末だけ、ガレージ保管です。"></textarea>
-      <p class="hint">「どこを走ったか」「どう保管しているか」を書くとAI分析が読み取ってくれます</p>
+      <p class="hint">走った場所や保管方法にふれておくと、AI分析の推定材料になります</p>
     </div>
     <p class="err-msg" id="e-diary" hidden>タイトルと本文を入力してください。</p>
     <button class="btn btn-primary btn-block" onclick="saveDiary()">この内容で記録する</button>
@@ -617,7 +629,7 @@ function saveDiary() {
   S.analysis = null; // 記録が増えたので分析は再実行を促す
   save();
   location.hash = "#diary";
-  toast("日記を記録しました。次は半年後でOKです！");
+  toast("日記を記録しました");
 }
 
 // ---------- 整備記録 ----------
@@ -627,7 +639,7 @@ function recordsListHTML() {
     : filter === "certified" ? S.records.filter(r => r.certified && !r.pasted)
     : S.records.filter(r => r.pasted);
   return buildTimeline(filtered) ||
-    `<div class="empty"><div class="e-icon">🔧</div><p>該当する整備記録がありません。</p></div>`;
+    `<div class="empty"><p>該当する整備記録がありません。</p></div>`;
 }
 
 function viewRecords() {
@@ -636,7 +648,7 @@ function viewRecords() {
 
   const factoryPanel = factory ? `
     <div class="card">
-      <div class="shop-badge">🏭 整備工場モード: ${esc(factory.name)}(記入権限あり)</div>
+      <div class="shop-badge">整備工場モード: ${esc(factory.name)}(記入権限あり)</div>
       <h3>整備記録を記入する</h3>
       <div class="field">
         <label for="r-date">整備実施日</label>
@@ -681,7 +693,7 @@ function viewRecords() {
       <div style="margin-top:8px"><button class="btn btn-ghost btn-block" onclick="exitFactory()">工場モードを終了</button></div>
     </div>` : `
     <div class="card">
-      <h3 style="margin-top:0">🏭 整備工場の方はこちら</h3>
+      <h3 style="margin-top:0">整備工場の方はこちら</h3>
       <p style="font-size:13px;color:var(--ink-soft);margin-bottom:12px">
         整備記録の詳細な記入は、クルマカルテの認定を受けた整備工場でのみ行えます。
         第三者が書いた記録だからこそ、買い手にとっての信頼材料になります。
@@ -782,16 +794,14 @@ function viewAnalysis() {
 
   if (!S.analysis) {
     return `<div class="card" style="text-align:center;padding:36px 24px">
-      <div style="font-size:44px;margin-bottom:10px">🤖</div>
       <h2>AIヒストリー分析</h2>
       <p style="font-size:13px;color:var(--ink-soft);margin:10px 0 18px">
-        蓄積された日記と整備記録をAIが読み解き、<br>
-        この車が「どんなふうに使われてきたか」を推定します。<br>
-        走行ペース・メンテナンス品質・保管状態・注意点まで。
+        日記と整備記録をもとに、走行ペース、メンテナンス状況、<br>
+        保管状態、購入時の確認ポイントを推定します。
       </p>
       ${total < 2
-        ? `<div class="banner banner-warn" style="text-align:left"><span>📭</span><div>分析には記録が2件以上必要です(現在${total}件)。日記や整備記録を追加してください。</div></div>`
-        : `<button class="btn btn-primary" onclick="runAnalysis()">🔍 分析を実行する(${total}件の記録)</button>`}
+        ? `<div class="banner banner-warn" style="text-align:left"><div>分析には記録が2件以上必要です(現在${total}件)。日記や整備記録を追加してください。</div></div>`
+        : `<button class="btn btn-primary" onclick="runAnalysis()">分析を実行する(${total}件の記録)</button>`}
       <p class="ai-note">※ デモ版はブラウザ内のルールベース解析です。製品版ではLLMによる本格的な文章解析を想定しています。</p>
     </div>`;
   }
@@ -843,7 +853,6 @@ function viewAnalysis() {
     <h2>AIが読み取ったポイント</h2>
     ${a.insights.map(i => `
       <div class="insight">
-        <span class="i-icon">${i.icon}</span>
         <div><b>${esc(i.title)}</b><p>${esc(i.body)}</p></div>
       </div>`).join("")}
   </div>
@@ -856,7 +865,7 @@ function viewAnalysis() {
       <div class="report-stat"><div class="l">分析日</div><div class="n" style="font-size:13px">${fmtDate(a.generatedAt)}</div></div>
     </div>
     <p class="ai-note">${esc(a.impact.desc)}。査定額を保証するものではありません。</p>
-    <div style="margin-top:14px"><a class="btn btn-primary btn-block" href="#report">📄 売却用レポートを見る</a></div>
+    <div style="margin-top:14px"><a class="btn btn-primary btn-block" href="#report">売却用レポートを見る</a></div>
   </div>`;
 }
 
@@ -898,7 +907,6 @@ function runAnalysis() {
 function viewReport() {
   if (!S.analysis) {
     return `<div class="card" style="text-align:center;padding:36px 24px">
-      <div style="font-size:44px;margin-bottom:10px">📄</div>
       <h2>売却用ストーリーレポート</h2>
       <p style="font-size:13px;color:var(--ink-soft);margin:10px 0 18px">
         レポートの生成には、先にAI分析の実行が必要です。
@@ -919,7 +927,7 @@ function viewReport() {
       <h2>${esc(car.model)}</h2>
       <div class="r-sub">${esc(car.year)}年式 / 車台番号 ${esc(car.vin)} / 発行日 ${fmtDate(todayISO())}</div>
       <div style="margin-top:10px">
-        <span class="chip chip-verified">🛡️ 認定店登録車両(${esc(car.shopName)})</span>
+        <span class="chip chip-verified">認定店登録車両(${esc(car.shopName)})</span>
       </div>
     </div>
 
@@ -938,10 +946,10 @@ function viewReport() {
     <h3>この車の物語(抜粋)</h3>
     ${buildTimeline([...S.diary, ...S.records], 6)}
 
-    <div class="banner banner-info no-print"><span>💡</span>
-      <div>買い手はこのレポートで「誰に・どう使われ・どう整備されてきたか」を確認できます。ストーリーの見える車は、安心して選ばれます。</div>
+    <div class="banner banner-info no-print">
+      <div>買い手はこのレポートで、この車がどう使われ、どう整備されてきたかを確認できます。</div>
     </div>
-    <button class="btn btn-navy btn-block no-print" onclick="window.print()">🖨️ 印刷 / PDFとして保存</button>
+    <button class="btn btn-navy btn-block no-print" onclick="window.print()">印刷 / PDFとして保存</button>
   </div>`;
 }
 
