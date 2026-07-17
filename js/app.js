@@ -799,6 +799,43 @@ function saveRecord() {
 // ---------- AI分析 ----------
 let analyzing = false;
 
+// スコアの内訳(減点理由)カード
+function scoreBreakdownCard(a) {
+  const deductions = a.deductions || [];
+  const lost = 100 - a.score;
+
+  if (!deductions.length) {
+    return `<div class="card">
+      <h2>スコアの内訳</h2>
+      <div class="score-perfect">
+        減点はありません。記録・整備・使われ方のすべてが良好で、満点(100点)です。
+      </div>
+    </div>`;
+  }
+
+  return `<div class="card">
+    <h2>スコアの内訳</h2>
+    <p style="font-size:13px;color:var(--ink-soft);margin-bottom:6px">
+      満点(100点)を基準に、下記の理由で合計<b style="color:var(--coral)"> −${lost}点</b>し、現在のスコアは<b>${a.score}点</b>です。
+    </p>
+    <div class="score-math">
+      <span class="sm-base">100</span>
+      <span class="sm-op">−</span>
+      <span class="sm-lost">${lost}</span>
+      <span class="sm-op">=</span>
+      <span class="sm-total">${a.score}</span>
+    </div>
+    <div class="deduction-list">
+      ${deductions.map(d => `
+        <div class="deduction">
+          <div class="d-points">−${d.points}</div>
+          <div class="d-body"><b>${esc(d.label)}</b><p>${esc(d.note)}</p></div>
+        </div>`).join("")}
+    </div>
+    <p class="ai-note">これらの記録を追加・改善すると、次回の分析でスコアが上がります。</p>
+  </div>`;
+}
+
 function viewAnalysis() {
   const total = S.diary.length + S.records.length;
 
@@ -857,6 +894,8 @@ function viewAnalysis() {
       ${a.usage.tags.map(t => `<span class="chip ${t.good === true ? "chip-verified" : t.good === false ? "chip-paste" : "chip-tag"}">${t.good === true ? "◎" : t.good === false ? "△" : "・"} ${esc(t.label)}</span>`).join("")}
     </div>
   </div>
+
+  ${scoreBreakdownCard(a)}
 
   <div class="card">
     <h2>メンテナンス評価: ${esc(a.maint.grade)}ランク</h2>

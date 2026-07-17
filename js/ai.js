@@ -21,7 +21,8 @@ const KurumaAI = {
     const usage = this._usagePattern(mileage, text, diary);
     const maint = this._maintenanceQuality(records, mileage);
     const severe = this._severeConditions(text);
-    const score = this._score(mileage, maint, severe, diary, records);
+    const scoring = this._scoreBreakdown(mileage, usage, maint, severe, diary, records);
+    const score = scoring.score;
     const impact = this._resaleImpact(score);
 
     const now = new Date();
@@ -29,6 +30,7 @@ const KurumaAI = {
     return {
       generatedAt: localDate,
       mileage, usage, maint, severe, score, impact,
+      deductions: scoring.deductions,
       insights: this._insights(mileage, usage, maint, severe, diary, records),
       buyerSummary: this._buyerSummary(car, mileage, usage, maint, severe, score),
       dataCount: { diary: diary.length, records: records.length },
@@ -160,21 +162,68 @@ const KurumaAI = {
     return { isSevere: hits.length > 0, hits };
   },
 
-  // ---- 総合スコア(100点満点) ----
-  _score(mileage, maint, severe, diary, records) {
-    let s = 50;
-    if (maint.grade === "S") s += 20;
-    else if (maint.grade === "A") s += 14;
-    else if (maint.grade === "B") s += 6;
-    if (maint.regularOil) s += 8;
-    if (maint.shaken >= 1) s += 4;
-    if (maint.certified >= records.length && records.length > 0) s += 4;
-    if (diary.length >= 6) s += 8;
-    else if (diary.length >= 3) s += 5;
-    else if (diary.length >= 1) s += 2;
-    if (mileage.annualKm != null && mileage.annualKm < 10000) s += 4;
-    s -= severe.hits.length * 5;
-    return Math.max(10, Math.min(100, Math.round(s)));
+  // ---- 総合スコア(100点満点・減点方式) ----
+  // 満点100点から、記録の不足やリスク要因ごとに理由つきで減点する。
+  _scoreBreakdown(mileage, usage, maint, severe, diary, records) {
+    const deductions = [];
+    const D = (points, label, note) => deductions.push({ points, label, note });
+
+    // 整備グレード
+    if (maint.grade === "A") {
+      D(6, "整備は良好だが最上位評価ではない", "認定工場での整備は継続的ですが、オイル管理や車検・点検記録の網羅性が最上位(Sランク)に一歩届きません。");
+    } else if (maint.grade === "B") {
+      D(16, "整備の間隔・網羅性に改善の余地", "整備記録はありますが、点検や車検などの記録が十分に揃っていません。");
+    } else if (maint.grade === "C") {
+      D(28, "整備記録が少なく管理状況を確認できない", "実施された整備の記録がほとんど残っていません。記録を残すことで評価が上がります。");
+    }
+
+    // オイル管理
+    if (maint.total >= 2 && !maint.regularOil) {
+      D(8, "オイル交換の間隔が推奨より長め", "距離または期間の早い方での交換をおすすめします。");
+    }
+
+    // 車検の記録
+    if (records.length >= 3 && maint.shaken < 1) {
+      D(6, "車検(継続検査)の記録が見当たらない", "車検の記録があると整備の連続性を示せます。");
+    }
+
+    // 認定工場以外の記録
+    const uncertified = records.length - maint.certified;
+    if (uncertified > 0) {
+      D(Math.min(12, uncertified * 3), "認定工場以外の記録が含まれる",
+        `${uncertified}件が認定工場以外の記録です。第三者(認定工場)による記録ほど買い手の信頼につながります。`);
+    }
+
+    // 日記の厚み(ストーリー)
+    if (diary.length === 0) {
+      D(12, "日記がなく、使われ方の物語が残っていない", "オーナーの日記は、整備記録では分からない扱いの丁寧さを伝えます。");
+    } else if (diary.length <= 2) {
+      D(8, "日記が少なく、ストーリーの厚みが不足", "半年に1回でも書き続けると評価が上がります。");
+    } else if (diary.length <= 5) {
+      D(4, "日記の件数がやや少なめ", "記録が増えるほど、この車の物語に厚みが出ます。");
+    }
+
+    // 走行距離
+    if (mileage.annualKm == null) {
+      D(4, "走行距離の記録が不足し使われ方を推定しにくい", "走行距離を記録すると分析の精度が上がります。");
+    } else if (mileage.annualKm >= 15000) {
+      D(8, "年間走行距離が多く消耗の進行が想定される", `年間約${mileage.annualKm.toLocaleString()}kmは平均(約8,000km)を大きく上回ります。`);
+    } else if (mileage.annualKm >= 10000) {
+      D(4, "年間走行距離がやや多め", `年間約${mileage.annualKm.toLocaleString()}kmは平均(約8,000km)をやや上回ります。`);
+    }
+
+    // シビアコンディション(重い負荷)
+    severe.hits.forEach(h => D(5, h.split("(")[0], h));
+
+    // その他のリスク要因タグ(シビアコンディションと重複しないもの)
+    usage.tags.filter(t => t.good === false).forEach(t => {
+      if (/降雪|凍結|スポーツ走行|短距離/.test(t.label)) return; // severeで計上済み
+      D(3, t.label, t.note || "購入時に状態を確認しておくと安心です。");
+    });
+
+    const totalDeduct = deductions.reduce((a, d) => a + d.points, 0);
+    const score = Math.max(10, Math.min(100, 100 - totalDeduct));
+    return { score, deductions };
   },
 
   // ---- 査定への影響(目安) ----
