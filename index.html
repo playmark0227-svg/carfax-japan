@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="クルマカルテ — 愛車の物語を、次のオーナーへ。認定店で登録し、日記と整備記録で車両ヒストリーを残す日本版車両履歴サービスのコンセプトデモ。">
+<title>クルマカルテ | 愛車の物語を、次のオーナーへ</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a href="#home" class="brand">
+    <span class="brand-mark">🚗</span>
+    <span class="brand-name">クルマカルテ</span>
+    <span class="brand-tag">CONCEPT DEMO</span>
+  </a>
+  <nav class="topnav" id="topnav"></nav>
+</header>
+
+<main id="app" class="app"></main>
+
+<nav class="tabbar" id="tabbar"></nav>
+
+<footer class="footer">
+  <p>クルマカルテはコンセプト実証のためのデモです。入力されたデータはお使いのブラウザ内(localStorage)にのみ保存され、サーバーには送信されません。</p>
+  <p>米国のCARFAX社およびその他の車両履歴サービスとは一切関係のない、独立した民間サービスの企画デモです。</p>
+  <p><button class="linklike" onclick="resetDemo()">デモデータをリセット</button></p>
+</footer>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="js/data.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
