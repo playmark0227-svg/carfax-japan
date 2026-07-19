@@ -30,17 +30,21 @@ const DEMO_SEED = {
     shopCode: "DEMO-1234",
     shopName: "カーフィールド世田谷",
     activatedAt: "2021-10-16",
+    photo: "img/car-main.jpg",
+    photos: ["img/car-main.jpg", "img/car-side.jpg", "img/car-front.jpg", "img/car-detail.jpg"],
   },
   diary: [
     {
       id: "d1", date: "2021-10-16", odo: 18500, category: "納車・記念日",
       title: "納車の日",
       text: "ずっと憧れだったロードスター、ついに納車。中古だけど前オーナーさんが大切に乗っていたのが伝わってくる。ここからは自分がこの車の物語を書いていく番。まずはガレージに収まった姿を眺めてニヤニヤ。",
+      photo: "img/car-main.jpg",
     },
     {
       id: "d2", date: "2022-04-10", odo: 20800, category: "ドライブ",
       title: "春の箱根ターンパイク",
       text: "オープンにして箱根へ。ワインディングでの身のこなしが最高。飛ばさなくても楽しい車。帰宅後はいつも通り手洗い洗車。虫の跡は早めに落とすのが鉄則。",
+      photo: "img/car-side.jpg",
     },
     {
       id: "d3", date: "2022-11-03", odo: 23900, category: "ドライブ",
@@ -61,6 +65,7 @@ const DEMO_SEED = {
       id: "d6", date: "2024-06-15", odo: 33000, category: "ドライブ",
       title: "友人の結婚式で長距離",
       text: "静岡での友人の結婚式へ高速で往復。久々の長距離だったが快調そのもの。平均燃費17.2km/L。渋滞でもクラッチが軽いから疲れない。",
+      photo: "img/car-front.jpg",
     },
     {
       id: "d7", date: "2024-12-08", odo: 36200, category: "メンテ・保管",

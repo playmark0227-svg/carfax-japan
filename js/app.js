@@ -105,6 +105,187 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
 }
 
+function saveSafe() {
+  try { save(); return true; }
+  catch (e) { toast("保存できませんでした(ブラウザの容量上限)"); return false; }
+}
+
+// ---------- 画像:選択したファイルを縮小して dataURL 化 ----------
+function resizeToDataURL(file, maxEdge, cb) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      cv.getContext("2d").drawImage(img, 0, 0, w, h);
+      try { cb(cv.toDataURL("image/jpeg", 0.82)); } catch (_) { cb(null); }
+    };
+    img.onerror = () => cb(null);
+    img.src = e.target.result;
+  };
+  reader.onerror = () => cb(null);
+  reader.readAsDataURL(file);
+}
+
+// ---------- 共有:URLフラグメントへ埋め込む(バックエンド不要) ----------
+function encodePayload(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  let bin = "";
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function decodePayload(str) {
+  const b64 = str.replace(/-/g, "+").replace(/_/g, "/");
+  const bin = atob(b64);
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+// 公開スナップショット(個人情報=車台番号/ナンバー/氏名/連絡先は含めない)
+function buildSnapshot() {
+  const a = S.analysis;
+  const car = S.car || {};
+  const photo = (car.photo && !String(car.photo).startsWith("data:")) ? car.photo : null;
+  const highlights = S.diary.slice()
+    .sort((x, y) => (y.date || "").localeCompare(x.date || ""))
+    .slice(0, 3)
+    .map(d => { const t = d.text || ""; return { d: d.date, t: d.title, x: t.length > 54 ? t.slice(0, 54) + "…" : t }; });
+  return {
+    m: car.model, y: car.year, c: car.color, sh: car.shopName,
+    odo: latestOdo(), from: car.activatedAt, ph: photo,
+    sc: a ? a.score : null, ut: a ? a.usage.type : null, gr: a ? a.maint.grade : null,
+    sum: a ? (a.buyerSummary || "").slice(0, 150) : null,
+    dc: S.diary.length, rc: S.records.length, hl: highlights, ts: todayISO(),
+  };
+}
+
+function buildShareUrl() {
+  return location.origin + location.pathname + "#public?c=" + encodePayload(buildSnapshot());
+}
+
+function shareCar() {
+  if (!S.car) return;
+  const url = buildShareUrl();
+  const scoreTxt = S.analysis ? `ヒストリースコア${S.analysis.score}点。` : "";
+  const text = `${S.car.model}のクルマカルテ(車両ヒストリー)です。${scoreTxt}日記と整備記録で、この車のストーリーが分かります。`;
+  if (navigator.share) {
+    navigator.share({ title: "クルマカルテ", text, url }).catch(err => {
+      if (err && err.name === "AbortError") return;
+      openShareModal(url, text);
+    });
+  } else {
+    openShareModal(url, text);
+  }
+}
+
+function xIntentUrl(text, url) {
+  const p = new URLSearchParams({ text, url, hashtags: "クルマカルテ" });
+  return "https://twitter.com/intent/tweet?" + p.toString();
+}
+function lineShareUrl(url) {
+  return "https://social-plugins.line.me/lineit/share?url=" + encodeURIComponent(url);
+}
+
+function openShareModal(url, text) {
+  closeShareModal();
+  const wrap = document.createElement("div");
+  wrap.id = "share-modal";
+  wrap.className = "modal-backdrop";
+  wrap.innerHTML = `
+    <div class="modal" role="dialog" aria-label="共有">
+      <h3>クルマカルテを共有</h3>
+      <p class="modal-sub">買い手やSNSに、この車のヒストリーを見せられます。個人情報(車台番号・ナンバー・氏名・連絡先)は含まれません。</p>
+      <a class="btn btn-block share-x" href="${esc(xIntentUrl(text, url))}" target="_blank" rel="noopener">Xでシェアする</a>
+      <a class="btn btn-block share-line" href="${esc(lineShareUrl(url))}" target="_blank" rel="noopener">LINEで送る</a>
+      <button class="btn btn-block btn-secondary" onclick="copyShareLink()">リンクをコピー</button>
+      <button class="btn btn-block btn-ghost" onclick="closeShareModal()">閉じる</button>
+    </div>`;
+  wrap.addEventListener("click", e => { if (e.target === wrap) closeShareModal(); });
+  wrap.__url = url;
+  document.body.appendChild(wrap);
+  requestAnimationFrame(() => wrap.classList.add("show"));
+}
+function closeShareModal() {
+  const m = document.getElementById("share-modal");
+  if (m) m.remove();
+}
+function copyShareLink() {
+  const m = document.getElementById("share-modal");
+  const url = m ? m.__url : buildShareUrl();
+  const done = () => toast("リンクをコピーしました");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(done).catch(() => fallbackCopy(url, done));
+  } else {
+    fallbackCopy(url, done);
+  }
+}
+function fallbackCopy(text, done) {
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); done(); } catch (_) { toast("コピーできませんでした"); }
+  ta.remove();
+}
+
+// ---------- 次回の車検・法定点検リマインダー ----------
+function nextMaintenance() {
+  if (!S.records.length) return [];
+  const recs = S.records.slice().sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  const addYears = (iso, y) => { const d = new Date(iso); d.setFullYear(d.getFullYear() + y); return d; };
+  const daysLeft = d => Math.round((d - new Date()) / 86400000);
+  const statusOf = days => days < 0 ? "超過" : days <= 60 ? "間近" : "期限内";
+  const out = [];
+
+  const shaken = recs.filter(r => /車検|継続検査/.test((r.title || "") + (r.type || ""))).slice(-1)[0];
+  if (shaken) {
+    const due = addYears(shaken.date, 2), days = daysLeft(due);
+    out.push({ label: "次回の車検", due, days, status: statusOf(days) });
+  }
+  const tenken = recs.filter(r => /12ヶ月点検|法定点検/.test((r.title || "") + (r.detail || ""))).slice(-1)[0];
+  if (tenken) {
+    const due = addYears(tenken.date, 1), days = daysLeft(due);
+    out.push({ label: "次回の法定点検", due, days, status: statusOf(days) });
+  }
+  return out;
+}
+
+// ---------- 信頼バッジ ----------
+function trustBadges() {
+  const all = [...S.diary, ...S.records].filter(x => Number(x.odo) > 0)
+    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  let monotonic = true;
+  for (let i = 1; i < all.length; i++) if (Number(all[i].odo) < Number(all[i - 1].odo)) monotonic = false;
+
+  const total = S.records.length;
+  const certified = S.records.filter(r => r.certified).length;
+  const rate = total ? Math.round(certified / total * 100) : 0;
+
+  const badges = [];
+  badges.push({ label: monotonic ? "メーター改ざん 検知なし" : "走行距離に逆行あり", ok: monotonic });
+  if (total) badges.push({ label: `認定工場の整備 ${rate}%`, ok: rate >= 80 });
+  if (S.records.some(r => r.pasted)) badges.push({ label: "整備記録簿の転記あり", ok: true });
+  return badges;
+}
+
+// スコアリング(円グラフ)のHTMLを共通化
+function scoreRingHTML(score, size) {
+  const R = 48, C = 2 * Math.PI * R;
+  const offset = C * (1 - score / 100);
+  const color = score >= 85 ? "var(--green)" : score >= 65 ? "var(--amber)" : "var(--coral)";
+  const px = size || 118;
+  return `<div class="score-ring" style="width:${px}px;height:${px}px">
+    <svg width="${px}" height="${px}" viewBox="0 0 110 110">
+      <circle cx="55" cy="55" r="${R}" fill="none" stroke="var(--line)" stroke-width="10"/>
+      <circle class="ring-fill" cx="55" cy="55" r="${R}" fill="none" stroke="${color}" stroke-width="10"
+        stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${offset}" style="--circ:${C}"/>
+    </svg>
+    <div class="score-num"><b data-count="${score}">0</b><span>ヒストリースコア</span></div>
+  </div>`;
+}
+
 
 // ---------- アイコン(インラインSVG) ----------
 const ICONS = {
@@ -116,6 +297,9 @@ const ICONS = {
   doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5V8h4"/><path d="M9.8 12.2h4.4M9.8 15.6h4.4"/></svg>',
   pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2.12 2.12 0 0 1 3 3L8 19l-4 1Z"/><path d="M13.5 7.5l3 3"/></svg>',
   store: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14l1.5 4.5H3.5L5 5Z"/><path d="M5.5 9.5V19.5h13V9.5"/><path d="M9.7 19.5V14h4.6v5.5"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.8 15.7 6.4M8.3 13.2l7.4 4.4"/></svg>',
+  camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h3l1.4-2h7.2L20 8.5h0a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 20 19.5H4A1.5 1.5 0 0 1 2.5 18v-8A1.5 1.5 0 0 1 4 8.5Z"/><circle cx="12" cy="13" r="3.2"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
 };
 
 // ---------- ルーター ----------
@@ -129,6 +313,7 @@ const ROUTES = {
   records:  { fn: viewRecords,  guard: "auth" },
   analysis: { fn: viewAnalysis, guard: "auth" },
   report:   { fn: viewReport,   guard: "auth" },
+  public:   { fn: viewPublic,   guard: null },  // 共有リンクの読み取り専用ページ
 };
 
 function currentRoute() {
@@ -147,6 +332,7 @@ function render() {
 
   document.getElementById("app").innerHTML =
     `<div class="view">${ROUTES[route].fn()}</div>`;
+  document.body.classList.toggle("public-view", route === "public");
   renderNav(route);
   window.scrollTo(0, 0);
   afterRender(route);
@@ -172,6 +358,9 @@ function renderNav(route) {
 
 // 初回起動:デモ車両を用意して「マイカー」から始める
 function boot() {
+  // 共有リンク(#public)で来た人には、デモ投入もリダイレクトもしない
+  if (currentRoute() === "public") { render(); return; }
+
   if (!S.activated) {
     S.activated = true;
     S.loggedIn = true;
@@ -497,19 +686,63 @@ function viewMyCar() {
   }
 
   const timeline = buildTimeline([...S.diary, ...S.records], 5);
+  const badges = trustBadges();
+  const reminders = nextMaintenance();
+  const gallery = (car.photos || []).filter(Boolean);
+
+  // 写真つきの車両カード(写真がなければネイビーのフラットカード)
+  const hasPhoto = !!car.photo;
+  const carCard = `
+  <div class="car-card ${hasPhoto ? "has-photo" : "flat"}">
+    ${hasPhoto ? `<img class="cc-photo" src="${esc(car.photo)}" alt="${esc(car.model)}">` : ""}
+    <div class="cc-overlay">
+      <span class="verified-chip">認定店登録済み車両</span>
+      <div class="cc-bottom">
+        <div class="cc-model">${esc(car.model)}</div>
+        <div class="cc-sub">${esc(car.year)}年式${car.color ? " / " + esc(car.color) : ""} / 登録店: ${esc(car.shopName)}</div>
+        <div class="car-stats">
+          <div class="cs"><div class="n"><span data-count="${odo}">0</span><small>km</small></div><div class="l">走行距離</div></div>
+          <div class="cs"><div class="n">${ownLabel}</div><div class="l">記録期間</div></div>
+          <div class="cs"><div class="n"><span data-count="${S.diary.length + S.records.length}">0</span><small>件</small></div><div class="l">ヒストリー</div></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  const badgeRow = badges.length ? `<div class="badge-row">
+    ${badges.map(b => `<span class="trust-badge ${b.ok ? "ok" : "warn"}">${esc(b.label)}</span>`).join("")}
+  </div>` : "";
+
+  const reminderCard = reminders.length ? `
+  <div class="card reminder-card">
+    <div class="rc-head"><span class="rc-icon">${ICONS.bell}</span><b>次のメンテナンス予定</b></div>
+    ${reminders.map(r => {
+      const cls = r.status === "超過" ? "over" : r.status === "間近" ? "soon" : "ok";
+      const when = r.days < 0 ? `${Math.abs(r.days)}日超過` : `あと${r.days}日`;
+      return `<div class="reminder ${cls}">
+        <div class="rm-label">${esc(r.label)}</div>
+        <div class="rm-date">${fmtDate(r.due.toISOString().slice(0,10))}</div>
+        <div class="rm-badge">${when}</div>
+      </div>`;
+    }).join("")}
+  </div>` : "";
+
+  const galleryHtml = gallery.length ? `
+  <p class="section-title" style="--st-c:var(--purple)">愛車アルバム</p>
+  <div class="album">
+    ${gallery.map(p => `<img class="album-photo" src="${esc(p)}" loading="lazy" alt="">`).join("")}
+  </div>` : "";
 
   return `
   ${reminder}
-  <div class="car-card">
-    <span class="verified-chip">認定店登録済み車両</span>
-    <div class="cc-model">${esc(car.model)}</div>
-    <div class="cc-sub">${esc(car.year)}年式${car.color ? " / " + esc(car.color) : ""} / 登録店: ${esc(car.shopName)}</div>
-    <div class="car-stats">
-      <div class="cs"><div class="n"><span data-count="${odo}">0</span><small style="font-size:11px">km</small></div><div class="l">走行距離</div></div>
-      <div class="cs"><div class="n">${ownLabel}</div><div class="l">記録期間</div></div>
-      <div class="cs"><div class="n"><span data-count="${S.diary.length + S.records.length}">0</span><small style="font-size:11px">件</small></div><div class="l">ヒストリー</div></div>
-    </div>
-  </div>
+  ${carCard}
+  ${badgeRow}
+
+  <button class="btn btn-primary btn-block share-cta" onclick="shareCar()">
+    <span class="btn-ic">${ICONS.share}</span>この車のヒストリーを共有する
+  </button>
+
+  ${reminderCard}
 
   <div class="action-grid">
     <a class="action-tile tile-coral" href="#diary-new">
@@ -529,6 +762,8 @@ function viewMyCar() {
       <span class="a-desc">買い手向け資料</span>
     </a>
   </div>
+
+  ${galleryHtml}
 
   <p class="section-title">最近のヒストリー</p>
   ${timeline || `<div class="empty"><p>まだ記録がありません。</p></div>`}
@@ -552,6 +787,8 @@ function buildTimeline(items, limit) {
         (x.certified ? `<span class="chip chip-verified">認定工場</span>` : "") +
         (x.pasted ? `<span class="chip chip-paste">記録簿転記</span>` : "");
     const body = isDiary ? x.text : x.detail;
+    const photo = x.photo
+      ? `<img class="tl-photo" src="${esc(x.photo)}" loading="lazy" alt="">` : "";
     const items_ = !isDiary && (x.items || []).length
       ? `<ul class="tl-items">${x.items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>` : "";
     const meta = [
@@ -563,6 +800,7 @@ function buildTimeline(items, limit) {
       <div class="tl-date">${fmtDate(x.date)}</div>
       <div class="tl-card">
         <div class="tl-head">${chips}<span class="tl-title">${esc(x.title)}</span></div>
+        ${photo}
         <div class="tl-body">${esc(body)}</div>
         ${items_}
         ${meta ? `<div class="tl-meta"><span>${meta}</span></div>` : ""}
@@ -623,10 +861,30 @@ function viewDiaryNew() {
       <textarea id="d-text" placeholder="例: オープンにして箱根へ。帰りに手洗い洗車。普段は週末だけ、ガレージ保管です。"></textarea>
       <p class="hint">走った場所や保管方法にふれておくと、AI分析の推定材料になります</p>
     </div>
+    <div class="field">
+      <label>写真<span style="font-weight:400;color:var(--ink-faint)"> — 任意</span></label>
+      <label class="photo-picker" for="d-photo">
+        <span class="pp-icon">${ICONS.camera}</span>
+        <span class="pp-text">写真を選ぶ</span>
+      </label>
+      <input type="file" id="d-photo" accept="image/*" hidden onchange="previewDiaryPhoto(this)">
+      <div id="d-photo-preview"></div>
+    </div>
     <p class="err-msg" id="e-diary" hidden>タイトルと本文を入力してください。</p>
     <button class="btn btn-primary btn-block" onclick="saveDiary()">この内容で記録する</button>
     <div style="margin-top:8px"><a class="btn btn-ghost btn-block" href="#diary">キャンセル</a></div>
   </div>`;
+}
+
+function previewDiaryPhoto(input) {
+  const file = input.files && input.files[0];
+  const box = document.getElementById("d-photo-preview");
+  if (!file) { box.innerHTML = ""; return; }
+  resizeToDataURL(file, 1200, url => {
+    if (!url) { box.innerHTML = `<p class="hint">この画像は読み込めませんでした。</p>`; return; }
+    box.dataset.url = url;
+    box.innerHTML = `<img class="photo-preview" src="${url}" alt="プレビュー">`;
+  });
 }
 
 function saveDiary() {
@@ -643,9 +901,12 @@ function saveDiary() {
       !confirm(`入力された走行距離(${odo.toLocaleString()}km)がこれまでの記録(${latestOdo().toLocaleString()}km)より小さくなっています。このまま登録しますか？`)) {
     return;
   }
-  S.diary.push({ id: uid(), date, odo, category, title, text });
+  const photo = document.getElementById("d-photo-preview").dataset.url || "";
+  const entry = { id: uid(), date, odo, category, title, text };
+  if (photo) entry.photo = photo;
+  S.diary.push(entry);
   S.analysis = null; // 記録が増えたので分析は再実行を促す
-  save();
+  if (!saveSafe()) { S.diary.pop(); return; }
   location.hash = "#diary";
   toast("日記を記録しました");
 }
@@ -925,6 +1186,7 @@ function viewAnalysis() {
     </div>
     <p class="ai-note">${esc(a.impact.desc)}。査定額を保証するものではありません。</p>
     <div style="margin-top:14px"><a class="btn btn-primary btn-block" href="#report">売却用レポートを見る</a></div>
+    <div style="margin-top:8px"><button class="btn btn-secondary btn-block" onclick="shareCar()"><span class="btn-ic">${ICONS.share}</span>この分析結果を共有する</button></div>
   </div>`;
 }
 
@@ -984,6 +1246,7 @@ function viewReport() {
 
   return `
   <div class="card">
+    ${car.photo ? `<div class="report-cover"><img src="${esc(car.photo)}" alt="${esc(car.model)}"></div>` : ""}
     <div class="report-head">
       <div class="r-brand">KURUMA KARTE REPORT</div>
       <h2>${esc(car.model)}</h2>
@@ -1011,7 +1274,82 @@ function viewReport() {
     <div class="banner banner-info no-print">
       <div>買い手はこのレポートで、この車がどう使われ、どう整備されてきたかを確認できます。</div>
     </div>
-    <button class="btn btn-navy btn-block no-print" onclick="window.print()">印刷 / PDFとして保存</button>
+    <button class="btn btn-primary btn-block no-print" onclick="shareCar()"><span class="btn-ic">${ICONS.share}</span>買い手に共有する</button>
+    <div class="no-print" style="margin-top:8px"><button class="btn btn-navy btn-block" onclick="window.print()">印刷 / PDFとして保存</button></div>
+  </div>`;
+}
+
+// ---------- 共有された公開ヒストリー(読み取り専用) ----------
+function viewPublic() {
+  const query = (location.hash.split("?")[1] || "");
+  const c = new URLSearchParams(query).get("c");
+  let p = null;
+  try { p = c ? decodePayload(c) : null; } catch (e) { p = null; }
+
+  if (!p || !p.m) {
+    return `<div class="card" style="text-align:center;padding:40px 24px">
+      <h2>リンクを読み込めません</h2>
+      <p style="font-size:13px;color:var(--ink-soft);margin:10px 0 18px">
+        共有リンクが壊れているか、対応していない形式の可能性があります。
+      </p>
+      <a class="btn btn-primary" href="#home">クルマカルテのトップへ</a>
+    </div>`;
+  }
+
+  const ownMonths = p.from ? monthsSince(p.from) : null;
+  const ownLabel = ownMonths == null ? "—"
+    : ownMonths >= 12 ? `${Math.floor(ownMonths / 12)}年${ownMonths % 12}ヶ月` : `${ownMonths}ヶ月`;
+  const hasPhoto = p.ph && !String(p.ph).startsWith("data:");
+
+  const scoreCard = p.sc != null ? `
+  <div class="card">
+    <div class="score-ring-wrap">
+      ${scoreRingHTML(p.sc)}
+      <div>
+        <p style="font-size:13px;font-weight:800;margin-bottom:2px">推定される使われ方</p>
+        <p style="font-size:17px;font-weight:800;color:var(--navy)">${esc(p.ut || "—")}</p>
+        <p style="font-size:12px;color:var(--ink-soft)">メンテナンス評価: ${esc(p.gr || "—")}ランク</p>
+      </div>
+    </div>
+    ${p.sum ? `<div class="ai-summary-box" style="margin-top:14px">${esc(p.sum)}</div>` : ""}
+  </div>` : "";
+
+  const highlights = (p.hl || []).length ? `
+  <p class="section-title">この車の物語(抜粋)</p>
+  <div class="timeline">
+    ${p.hl.map(h => `<div class="tl-item tl-diary"><div class="tl-date">${fmtDate(h.d)}</div>
+      <div class="tl-card"><div class="tl-head"><span class="chip chip-diary">日記</span><span class="tl-title">${esc(h.t)}</span></div>
+      <div class="tl-body">${esc(h.x)}</div></div></div>`).join("")}
+  </div>` : "";
+
+  return `
+  <div class="car-card ${hasPhoto ? "has-photo" : "flat"}">
+    ${hasPhoto ? `<img class="cc-photo" src="${esc(p.ph)}" alt="${esc(p.m)}">` : ""}
+    <div class="cc-overlay">
+      <span class="verified-chip">認定店登録済み車両</span>
+      <div class="cc-bottom">
+        <div class="cc-model">${esc(p.m)}</div>
+        <div class="cc-sub">${esc(p.y || "")}年式${p.c ? " / " + esc(p.c) : ""}${p.sh ? " / 登録店: " + esc(p.sh) : ""}</div>
+        <div class="car-stats">
+          <div class="cs"><div class="n">${Number(p.odo || 0).toLocaleString()}<small>km</small></div><div class="l">走行距離</div></div>
+          <div class="cs"><div class="n">${ownLabel}</div><div class="l">記録期間</div></div>
+          <div class="cs"><div class="n">${(p.dc || 0) + (p.rc || 0)}<small>件</small></div><div class="l">ヒストリー</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="banner banner-warn">
+    <div>これはオーナーが共有した<b>スナップショット</b>です(未検証)。車台番号・ナンバー・氏名などの個人情報は含まれません。</div>
+  </div>
+
+  ${scoreCard}
+  ${highlights}
+
+  <div class="card" style="text-align:center">
+    <p style="font-size:14px;font-weight:800;margin-bottom:4px">あなたの愛車にも、物語を。</p>
+    <p style="font-size:12px;color:var(--ink-soft);margin-bottom:14px">日記と整備記録で車両ヒストリーを残すと、売るとき・買うときの信頼になります。</p>
+    <a class="btn btn-primary" href="#home">自分のクルマカルテを作る</a>
   </div>`;
 }
 
