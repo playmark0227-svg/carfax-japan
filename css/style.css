@@ -415,8 +415,8 @@ textarea { min-height: 120px; resize: vertical; }
 .modal .share-x { background: #111; color: #fff; }
 .modal .share-line { background: #06c755; color: #fff; }
 
-/* 公開ページではナビを隠す */
-.public-view .tabbar, .public-view .topnav { display: none !important; }
+/* 公開ページではナビと(状態を変える)フッターを隠す */
+.public-view .tabbar, .public-view .topnav, .public-view .footer { display: none !important; }
 .verified-chip::before {
   content: ""; width: 15px; height: 15px; border-radius: 50%; background: #4a3000;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z'/%3E%3C/svg%3E") center/contain no-repeat;

@@ -116,6 +116,7 @@ function resizeToDataURL(file, maxEdge, cb) {
   reader.onload = e => {
     const img = new Image();
     img.onload = () => {
+      if (!img.width || !img.height) { cb(null); return; } // 寸法ゼロ(壊れたSVG等)は不可
       const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
       const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
       const cv = document.createElement("canvas");
@@ -694,7 +695,7 @@ function viewMyCar() {
   const hasPhoto = !!car.photo;
   const carCard = `
   <div class="car-card ${hasPhoto ? "has-photo" : "flat"}">
-    ${hasPhoto ? `<img class="cc-photo" src="${esc(car.photo)}" alt="${esc(car.model)}">` : ""}
+    ${hasPhoto ? `<img class="cc-photo" src="${esc(car.photo)}" alt="${esc(car.model)}" onerror="var c=this.closest('.car-card');c.classList.remove('has-photo');c.classList.add('flat');this.remove()">` : ""}
     <div class="cc-overlay">
       <span class="verified-chip">認定店登録済み車両</span>
       <div class="cc-bottom">
@@ -730,7 +731,7 @@ function viewMyCar() {
   const galleryHtml = gallery.length ? `
   <p class="section-title" style="--st-c:var(--purple)">愛車アルバム</p>
   <div class="album">
-    ${gallery.map(p => `<img class="album-photo" src="${esc(p)}" loading="lazy" alt="">`).join("")}
+    ${gallery.map(p => `<img class="album-photo" src="${esc(p)}" loading="lazy" alt="" onerror="this.remove()">`).join("")}
   </div>` : "";
 
   return `
@@ -788,7 +789,7 @@ function buildTimeline(items, limit) {
         (x.pasted ? `<span class="chip chip-paste">記録簿転記</span>` : "");
     const body = isDiary ? x.text : x.detail;
     const photo = x.photo
-      ? `<img class="tl-photo" src="${esc(x.photo)}" loading="lazy" alt="">` : "";
+      ? `<img class="tl-photo" src="${esc(x.photo)}" loading="lazy" alt="" onerror="this.remove()">` : "";
     const items_ = !isDiary && (x.items || []).length
       ? `<ul class="tl-items">${x.items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>` : "";
     const meta = [
@@ -879,9 +880,15 @@ function viewDiaryNew() {
 function previewDiaryPhoto(input) {
   const file = input.files && input.files[0];
   const box = document.getElementById("d-photo-preview");
-  if (!file) { box.innerHTML = ""; return; }
+  if (!file) { delete box.dataset.url; box.innerHTML = ""; return; }
   resizeToDataURL(file, 1200, url => {
-    if (!url) { box.innerHTML = `<p class="hint">この画像は読み込めませんでした。</p>`; return; }
+    if (!url) {
+      // 失敗時は前回の選択を残さない(古い写真が保存されるのを防ぐ)
+      delete box.dataset.url;
+      input.value = "";
+      box.innerHTML = `<p class="hint">この画像は読み込めませんでした。別の写真を選んでください。</p>`;
+      return;
+    }
     box.dataset.url = url;
     box.innerHTML = `<img class="photo-preview" src="${url}" alt="プレビュー">`;
   });
@@ -904,9 +911,10 @@ function saveDiary() {
   const photo = document.getElementById("d-photo-preview").dataset.url || "";
   const entry = { id: uid(), date, odo, category, title, text };
   if (photo) entry.photo = photo;
+  const prevAnalysis = S.analysis;
   S.diary.push(entry);
   S.analysis = null; // 記録が増えたので分析は再実行を促す
-  if (!saveSafe()) { S.diary.pop(); return; }
+  if (!saveSafe()) { S.diary.pop(); S.analysis = prevAnalysis; return; } // 保存失敗時は完全に元へ戻す
   location.hash = "#diary";
   toast("日記を記録しました");
 }
@@ -1246,7 +1254,7 @@ function viewReport() {
 
   return `
   <div class="card">
-    ${car.photo ? `<div class="report-cover"><img src="${esc(car.photo)}" alt="${esc(car.model)}"></div>` : ""}
+    ${car.photo ? `<div class="report-cover"><img src="${esc(car.photo)}" alt="${esc(car.model)}" onerror="this.closest('.report-cover').remove()"></div>` : ""}
     <div class="report-head">
       <div class="r-brand">KURUMA KARTE REPORT</div>
       <h2>${esc(car.model)}</h2>
@@ -1324,7 +1332,7 @@ function viewPublic() {
 
   return `
   <div class="car-card ${hasPhoto ? "has-photo" : "flat"}">
-    ${hasPhoto ? `<img class="cc-photo" src="${esc(p.ph)}" alt="${esc(p.m)}">` : ""}
+    ${hasPhoto ? `<img class="cc-photo" src="${esc(p.ph)}" alt="${esc(p.m)}" onerror="var c=this.closest('.car-card');c.classList.remove('has-photo');c.classList.add('flat');this.remove()">` : ""}
     <div class="cc-overlay">
       <span class="verified-chip">認定店登録済み車両</span>
       <div class="cc-bottom">
